@@ -1,6 +1,7 @@
 -- WSZ AND GUSTXZ Hub - Volleyball Legends
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 -- Configuração do Hub
 local Hub = {
@@ -9,9 +10,17 @@ local Hub = {
     Game = "Volleyball Legends"
 }
 
+-- Proteger contra erros
+local function safeWait(time)
+    task.wait(time)
+end
+
 -- Obter o serviço remoto
 local function getRemote()
-    return game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SeasonService"):WaitForChild("RF"):WaitForChild("RequestRankedReward")
+    pcall(function()
+        return game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SeasonService"):WaitForChild("RF"):WaitForChild("RequestRankedReward")
+    end)
+    return nil
 end
 
 -- Criar a interface do Hub
@@ -19,7 +28,17 @@ local hubGui = Instance.new("ScreenGui")
 hubGui.Name = "WSZAndGUSTXZHub"
 hubGui.ResetOnSpawn = false
 hubGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-hubGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+pcall(function()
+    hubGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+end)
+
+if not hubGui.Parent then
+    print("❌ Erro: Não conseguiu colocar a GUI na tela")
+    return
+end
+
+print("✅ GUI criada com sucesso")
 
 -- ==================== TELA DE CARREGAMENTO ====================
 
@@ -85,13 +104,15 @@ spinnerInnerCorner.Parent = spinnerInner
 
 -- Animação do spinner
 local function animateSpinner()
-    while loadingGui.Parent and loadingGui.Visible do
+    while loadingGui and loadingGui.Parent and loadingGui.Visible do
         local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.In)
-        local tween = game:GetService("TweenService"):Create(spinnerFrame, tweenInfo, {
+        local tween = TweenService:Create(spinnerFrame, tweenInfo, {
             Rotation = 360
         })
         tween:Play()
-        tween.Completed:Wait()
+        pcall(function()
+            tween.Completed:Wait()
+        end)
         spinnerFrame.Rotation = 0
     end
 end
@@ -162,15 +183,17 @@ local loadingTime = 20
 local startTime = tick()
 
 local function updateProgress()
-    while loadingGui.Parent and loadingGui.Visible do
+    while loadingGui and loadingGui.Parent and loadingGui.Visible do
         local elapsed = tick() - startTime
         local progress = math.min(elapsed / loadingTime, 1)
         
-        local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = game:GetService("TweenService"):Create(progressBar, tweenInfo, {
-            Size = UDim2.new(progress, 0, 1, 0)
-        })
-        tween:Play()
+        pcall(function()
+            local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(progressBar, tweenInfo, {
+                Size = UDim2.new(progress, 0, 1, 0)
+            })
+            tween:Play()
+        end)
         
         progressText.Text = math.floor(progress * 100) .. "%"
         
@@ -186,13 +209,17 @@ task.spawn(updateProgress)
 
 -- Sumir a tela de carregamento após 20 segundos
 task.wait(loadingTime)
-local fadeOutInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local fadeOutTween = game:GetService("TweenService"):Create(loadingGui, fadeOutInfo, {
-    BackgroundTransparency = 1
-})
-fadeOutTween:Play()
-fadeOutTween.Completed:Wait()
-loadingGui:Destroy()
+pcall(function()
+    local fadeOutInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local fadeOutTween = TweenService:Create(loadingGui, fadeOutInfo, {
+        BackgroundTransparency = 1
+    })
+    fadeOutTween:Play()
+    task.wait(0.5)
+    loadingGui:Destroy()
+end)
+
+print("✅ Tela de carregamento concluída")
 
 -- ==================== INTERFACE PRINCIPAL ====================
 
@@ -211,7 +238,7 @@ local borderGradient = Instance.new("UICorner")
 borderGradient.CornerRadius = UDim.new(0, 15)
 borderGradient.Parent = mainFrame
 
--- Borda externa brilhante (neon effect)
+-- Borda externa brilhante
 local outerBorder = Instance.new("Frame")
 outerBorder.Name = "OuterBorder"
 outerBorder.Size = UDim2.new(1, 4, 1, 4)
@@ -235,7 +262,7 @@ bgGradient.Color = ColorSequence.new({
 bgGradient.Rotation = 45
 bgGradient.Parent = mainFrame
 
--- Header com efeito cyberpunk
+-- Header
 local headerFrame = Instance.new("Frame")
 headerFrame.Name = "Header"
 headerFrame.Size = UDim2.new(1, 0, 0, 80)
@@ -265,7 +292,7 @@ glowEffect.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
 glowEffect.BorderSizePixel = 0
 glowEffect.Parent = mainFrame
 
--- Título do Hub com efeito
+-- Título
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "Title"
 titleLabel.Size = UDim2.new(1, 0, 0, 45)
@@ -291,7 +318,7 @@ versionLabel.Font = Enum.Font.Gotham
 versionLabel.Text = "v1.0 | Volleyball Legends"
 versionLabel.Parent = headerFrame
 
--- ScrollingFrame para os botões
+-- ScrollingFrame
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Name = "ButtonScroll"
 scrollFrame.Size = UDim2.new(1, -20, 1, -110)
@@ -303,8 +330,8 @@ scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 200, 255)
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.Parent = mainFrame
 
--- Função para criar botão estilo gamer
-local function createButton(name, text, position, icon, callback, hasGlow)
+-- Função para criar botão
+local function createButton(name, text, position, callback, hasGlow)
     local buttonContainer = Instance.new("Frame")
     buttonContainer.Name = name .. "Container"
     buttonContainer.Size = UDim2.new(1, 0, 0, 60)
@@ -345,127 +372,70 @@ local function createButton(name, text, position, icon, callback, hasGlow)
     buttonStroke.Thickness = 2
     buttonStroke.Parent = button
     
-    -- Padding do texto
-    local padding = Instance.new("UIPadding")
-    padding.PaddingLeft = UDim.new(0, 15)
-    padding.PaddingRight = UDim.new(0, 15)
-    padding.Parent = button
-    
-    -- GLOW BRANCO NAS LETRAS (se hasGlow for true)
     if hasGlow then
         button.TextStrokeTransparency = 0.3
         button.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
     end
     
-    -- Efeito hover
-    local isHovered = false
+    -- Hover
     button.MouseEnter:Connect(function()
-        isHovered = true
-        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = game:GetService("TweenService"):Create(button, tweenInfo, {
-            BackgroundColor3 = Color3.fromRGB(35, 50, 75)
-        })
-        tween:Play()
-        
-        buttonStroke.Color = Color3.fromRGB(0, 255, 200)
-        button.TextColor3 = Color3.fromRGB(0, 255, 150)
+        pcall(function()
+            local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(button, tweenInfo, {
+                BackgroundColor3 = Color3.fromRGB(35, 50, 75)
+            })
+            tween:Play()
+            buttonStroke.Color = Color3.fromRGB(0, 255, 200)
+            button.TextColor3 = Color3.fromRGB(0, 255, 150)
+        end)
     end)
     
     button.MouseLeave:Connect(function()
-        isHovered = false
-        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = game:GetService("TweenService"):Create(button, tweenInfo, {
-            BackgroundColor3 = Color3.fromRGB(25, 35, 55)
-        })
-        tween:Play()
-        
-        buttonStroke.Color = Color3.fromRGB(0, 150, 200)
-        button.TextColor3 = Color3.fromRGB(0, 255, 200)
+        pcall(function()
+            local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(button, tweenInfo, {
+                BackgroundColor3 = Color3.fromRGB(25, 35, 55)
+            })
+            tween:Play()
+            buttonStroke.Color = Color3.fromRGB(0, 150, 200)
+            button.TextColor3 = Color3.fromRGB(0, 255, 200)
+        end)
     end)
     
-    -- Efeito de clique
     button.MouseButton1Click:Connect(function()
-        local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-        local tween = game:GetService("TweenService"):Create(button, tweenInfo, {
-            BackgroundColor3 = Color3.fromRGB(0, 200, 255)
-        })
-        tween:Play()
-        
-        callback()
-        
-        task.wait(0.1)
-        local tweenInfo2 = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween2 = game:GetService("TweenService"):Create(button, tweenInfo2, {
-            BackgroundColor3 = isHovered and Color3.fromRGB(35, 50, 75) or Color3.fromRGB(25, 35, 55)
-        })
-        tween2:Play()
+        pcall(callback)
     end)
     
     return button
 end
 
+local remote = getRemote()
+
 -- Criar botões
-local buttons = {
-    {name = "LuckyStyle", text = "🎰 LUCKY STYLE", icon = "🎰", position = 0, glow = false},
-    {name = "LuckyAbility", text = "⚡ LUCKY ABILITY", icon = "⚡", position = 75, glow = true},
-    {name = "AutoYen", text = "💰 AUTO YEN", icon = "💰", position = 150, glow = true}
-}
-
-local remote = nil
-
--- Obter remote com segurança
-pcall(function()
-    remote = getRemote()
-end)
-
--- Estados dos toggles
-local states = {
-    LuckyStyle = false,
-    LuckyAbility = false,
-    AutoYen = false
-}
-
--- Criar botões com callbacks
-createButton(buttons[1].name, buttons[1].text, buttons[1].position, buttons[1].icon, function()
-    if not remote then
-        pcall(function() remote = getRemote() end)
-    end
-    
-    states.LuckyStyle = not states.LuckyStyle
+createButton("LuckyStyle", "🎰 LUCKY STYLE", 0, function()
     pcall(function()
         if remote then
             remote:InvokeServer(1)
         end
     end)
-end, buttons[1].glow)
+end, false)
 
-createButton(buttons[2].name, buttons[2].text, buttons[2].position, buttons[2].icon, function()
-    if not remote then
-        pcall(function() remote = getRemote() end)
-    end
-    
-    states.LuckyAbility = not states.LuckyAbility
+createButton("LuckyAbility", "⚡ LUCKY ABILITY", 75, function()
     pcall(function()
         if remote then
             remote:InvokeServer(4)
         end
     end)
-end, buttons[2].glow)
+end, true)
 
-createButton(buttons[3].name, buttons[3].text, buttons[3].position, buttons[3].icon, function()
-    if not remote then
-        pcall(function() remote = getRemote() end)
-    end
-    
-    states.AutoYen = not states.AutoYen
+createButton("AutoYen", "💰 AUTO YEN", 150, function()
     pcall(function()
         if remote then
             remote:InvokeServer(2)
         end
     end)
-end, buttons[3].glow)
+end, true)
 
--- Atualizar tamanho do canvas
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 250)
 
 -- Rodapé
@@ -492,7 +462,65 @@ footerLabel.Text = "Made by WSZ & GUSTXZ | Delta Executor"
 footerLabel.TextXAlignment = Enum.TextXAlignment.Center
 footerLabel.Parent = footerFrame
 
--- Tornar a UI arrastável
+-- Botão de fechar
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 35, 0, 35)
+closeButton.Position = UDim2.new(1, -45, 0, 10)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 80)
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 20
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Text = "✕"
+closeButton.BorderSizePixel = 0
+closeButton.AutoButtonColor = false
+closeButton.Parent = headerFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeButton
+
+local closeStroke = Instance.new("UIStroke")
+closeStroke.Color = Color3.fromRGB(255, 100, 120)
+closeStroke.Thickness = 1.5
+closeStroke.Parent = closeButton
+
+closeButton.MouseEnter:Connect(function()
+    pcall(function()
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(closeButton, tweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(255, 80, 100)
+        })
+        tween:Play()
+    end)
+end)
+
+closeButton.MouseLeave:Connect(function()
+    pcall(function()
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(closeButton, tweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(255, 50, 80)
+        })
+        tween:Play()
+    end)
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    pcall(function()
+        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        local tween = TweenService:Create(mainFrame, tweenInfo, {
+            Position = UDim2.new(0.5, -225, 0.5, 500),
+            Size = UDim2.new(0, 0, 0, 0)
+        })
+        tween:Play()
+        task.wait(0.3)
+        mainFrame.Visible = false
+        mainFrame.Size = UDim2.new(0, 450, 0, 550)
+        mainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
+    end)
+end)
+
+-- Drag
 local dragStart = nil
 local dragStartPos = nil
 
@@ -504,22 +532,21 @@ mainFrame.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-mainFrame.InputEnded:Connect(function(input, gameProcessed)
+mainFrame.InputEnded:Connect(function(input)
     if input == dragStart then
         dragStart = nil
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input, gameProcessed)
+UserInputService.InputChanged:Connect(function(input)
     if dragStart then
         local delta = input.Position - dragStart.Position
         mainFrame.Position = dragStartPos + UDim2.new(0, delta.X, 0, delta.Y)
     end
 end)
 
--- ==================== BOTÃO TOGGLE 🤺 (CANTO SUPERIOR DIREITO) ====================
+-- ==================== BOTÃO TOGGLE 🤺 ====================
 
--- Container para o botão toggle
 local toggleContainer = Instance.new("Frame")
 toggleContainer.Name = "ToggleContainer"
 toggleContainer.Size = UDim2.new(0, 120, 0, 120)
@@ -528,7 +555,6 @@ toggleContainer.BackgroundTransparency = 1
 toggleContainer.ZIndex = 50
 toggleContainer.Parent = hubGui
 
--- Borda externa decorativa 1
 local borderDecor1 = Instance.new("Frame")
 borderDecor1.Name = "BorderDecor1"
 borderDecor1.Size = UDim2.new(1, 0, 1, 0)
@@ -538,7 +564,6 @@ borderDecor1.BorderSizePixel = 3
 borderDecor1.BorderColor3 = Color3.fromRGB(0, 200, 255)
 borderDecor1.Parent = toggleContainer
 
--- Borda externa decorativa 2 (rotated)
 local borderDecor2 = Instance.new("Frame")
 borderDecor2.Name = "BorderDecor2"
 borderDecor2.Size = UDim2.new(0.7, 0, 0.7, 0)
@@ -549,7 +574,6 @@ borderDecor2.BorderColor3 = Color3.fromRGB(0, 150, 200)
 borderDecor2.Rotation = 45
 borderDecor2.Parent = toggleContainer
 
--- Botão toggle principal
 local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "ToggleButton"
 toggleButton.Size = UDim2.new(0, 90, 0, 90)
@@ -564,7 +588,6 @@ toggleButton.AutoButtonColor = false
 toggleButton.ZIndex = 51
 toggleButton.Parent = toggleContainer
 
--- Gradiente do botão toggle
 local toggleGradient = Instance.new("UIGradient")
 toggleGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
@@ -574,12 +597,6 @@ toggleGradient.Color = ColorSequence.new({
 toggleGradient.Rotation = 45
 toggleGradient.Parent = toggleButton
 
--- Canto arredondado do toggle
 local toggleCorner = Instance.new("UICorner")
 toggleCorner.CornerRadius = UDim.new(0, 20)
 toggleCorner.Parent = toggleButton
-
--- Borda principal do botão toggle com stroke duplo
-local toggleStroke = Instance.new("UIStroke")
-toggleStroke.Color = Color3.fromRGB(0, 255, 200)
-tog
